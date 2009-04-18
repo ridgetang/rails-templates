@@ -5,7 +5,9 @@
   #run 'rm public/robots.txt'
   run 'rm -f public/javascripts/*'
 
-# Download JQuery
+# @todo: Download JQuery
+# @todo: Prep staging and production servers
+# @todo: Confirgure capistrano
 
 # Set up git repository
   git :init
@@ -49,7 +51,7 @@ END
   plugin 'restful-authentication', :git => 'git://github.com/technoweenie/restful-authentication.git', :submodule => true
   plugin 'acts_as_taggable_redux', :git => 'git://github.com/monki/acts_as_taggable_redux.git', :submodule => true
   plugin 'aasm', :git => 'git://github.com/rubyist/aasm.git', :submodule => true
- 
+
 # Install all gems
   gem 'thoughtbot-factory_girl', :lib => 'factory_girl', :source => 'http://gems.github.com'
   gem 'ruby-openid', :lib => 'openid'
@@ -57,7 +59,7 @@ END
   gem 'hpricot', :source => 'http://code.whytheluckystiff.net'
   gem 'RedCloth', :lib => 'redcloth'
   rake 'gems:install', :sudo => true
- 
+
 # Set up sessions, RSpec, user model, OpenID, etc, and run migrations
   rake 'db:sessions:create'
   generate 'authenticated', 'user session'
@@ -73,16 +75,16 @@ END
 
 # Configure home page
   #route "map.root :controller => 'people'"
- 
+
 # Set up session store initializer
   initializer 'session_store.rb', <<-END
 ActionController::Base.session = { :session_key => '_#{(1..6).map { |x| (65 + rand(26)).chr }.join}_session', :secret => '#{(1..40).map { |x| (65 + rand(26)).chr }.join}' }
 ActionController::Base.session_store = :active_record_store
 END
- 
+
 # Initialize submodules
   git :submodule => 'init'
- 
+
 # Commit all work so far to the repository
   git :add => '-u'
   git :add => '.'
