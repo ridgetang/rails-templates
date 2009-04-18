@@ -17,7 +17,6 @@
 
 # Set up .gitignore files
   run 'touch tmp/.gitignore log/.gitignore vendor/.gitignore'
-  run %{find . -type d -empty | grep -v 'vendor' | grep -v '.git' | grep -v 'tmp' | xargs -I xxx touch xxx/.gitignore}
   file '.gitignore', <<-END
 *~
 *.cache
@@ -41,6 +40,9 @@ log/*.pid
 nbproject/**/*
 tmp/**/*
 END
+
+# Place an empty .gitignore in empty directories
+  run %{find . -type d -empty | grep -v 'vendor' | grep -v '.git' | grep -v 'tmp' | xargs -I xxx touch xxx/.gitignore}
 
 # Set up sessions, RSpec, user model, OpenID, etc, and run migrations
   rake 'db:sessions:create'
