@@ -1,0 +1,8 @@
+run 'rm public/index.html'
+generate :scaffold, 'person name:string'
+route "map.root :controller => 'people'"
+rake 'db:migrate'
+
+git :init
+git :add => '.'
+git :commit => "-a -m 'Initial commit'"
