@@ -58,5 +58,3 @@ END
   git :add => '.'
   git :commit => "-m 'Initial commit'"
 
-# Success!
-  puts 'SUCCESS!'
