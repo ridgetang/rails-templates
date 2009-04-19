@@ -1,3 +1,9 @@
+freeze!
+capify!
+
+# Set up git repository
+  git :init
+
 # Delete unnecessary files
   run 'rm README'
   run 'rm public/index.html'
@@ -8,9 +14,156 @@
 # @todo: Download JQuery
 # @todo: Prep staging and production servers
 # @todo: Confirgure capistrano
+  file 'Capfile', %q{load 'deploy' if respond_to?(:namespace) # cap2 differentiator
+Dir['vendor/plugins/*/recipes/*.rb'].each { |plugin| load(plugin) }
+load 'config/deploy'
+}
+  file 'config/deploy.rb', %q{
+}
 
-# Set up git repository
-  git :init
+file 'config/deploy.rb',
+%q{require 'capistrano/ext/multistage'
+set :stages, %w(staging production)
+set :default_stage, 'staging'
+
+before 'deploy:setup', 'db:password'
+
+namespace :deploy do
+  desc 'Default deploy - updated to run migrations'
+  task :default do
+    set :migrate_target, :latest
+    update_code
+    migrate
+    symlink
+    restart
+  end
+
+  desc 'Start server'
+  task :start do
+    send run_method, "cd #{current_path} && #{mongrel_rails} cluster::start --config #{mongrel_cluster_config}"
+  end
+
+  desc 'Stop server'
+  task :stop do
+    send run_method, "cd #{current_path} && #{mongrel_rails} cluster::stop --config #{mongrel_cluster_config}"
+  end
+
+  desc 'Restart server'
+  task :restart do
+    #send run_method, "cd #{deploy_to}/#{current_dir} && #{mongrel_rails} cluster::restart --config #{mongrel_cluster_config}"
+    run "touch #{current_path}/tmp/restart.txt"
+  end
+
+  desc 'Run this after every successful deployment'
+  task :after_default do
+    cleanup
+  end
+end
+
+task :after_update_code do
+  run "ln -nfs #{shared_path}/config/database.yml #{release_path}/config/database.yml"
+end
+
+namespace :db do
+  desc 'Create database password in shared path'
+  task :password do
+    set :db_password, Proc.new { Capistrano::CLI.password_prompt 'Remote database password: ' }
+    run "mkdir -p #{shared_path}/config"
+    put db_password, "#{shared_path}/config/dbpassword"
+  end
+end
+}
+
+file 'config/deploy/staging.rb',
+%q{default_run_options[:pty] = true
+ssh_options[:forward_agent] = true
+
+set :use_sudo, false
+
+# Who are we?
+set :user, 'randombydesign' # PROMPT
+
+# Project hosting details
+set :application, 'IsItTheWeekendYet' # PROMPT
+set :domain, 'randombydesign.com' # PROMPT
+set :sub_domain, 'weekend' # PROMPT
+set :host, 'rbd.dreamhost.com' # PROMPT
+set :deploy_to, "/home/#{user}/public_html/#{domain}/#{sub_domain}"
+set :deploy_via, :remote_cache
+
+# For migrations
+set :rails_env, 'staging'
+
+# Deploy details
+set :scm, :git
+set :repository, "ssh://#{user}@#{host}/home/#{user}/repositories/#{domain}/#{sub_domain}/.git" # "git@github.com:#{user}/#{application}.git" # PROMPT
+set :branch, 'master'
+set :git_shallow_clone, 1
+set :scm_verbose, true
+
+role :app, host
+role :web, host
+role :db,  host, :primary => true
+}
+
+file 'config/deploy/production.rb',
+%q{default_run_options[:pty] = truecurrent_path
+ssh_options[:forward_agent] = true
+
+set :use_sudo, false
+
+# Who are we?
+set :user, 'randombydesign' # PROMPT
+
+# Project hosting details
+set :application, 'IsItTheWeekendYet' # PROMPT
+set :domain, 'isittheweekendyet.com' # PROMPT
+set :sub_domain, 'www' # PROMPT
+set :host, 'rbd.dreamhost.com' # PROMPT
+set :deploy_to, "/home/#{user}/public_html/#{domain}/#{sub_domain}"
+set :deploy_via, :remote_cache
+
+# For migrations
+set :rails_env, 'production'
+
+# Deploy details
+set :scm, :git
+set :repository, "ssh://#{user}@#{host}/home/#{user}/repositories/#{domain}/#{sub_domain}/.git" # "git@github.com:#{user}/#{application}.git" # PROMPT
+set :branch, 'master'
+set :git_shallow_clone, 1
+set :scm_verbose, true
+
+role :app, host
+role :web, host
+role :db,  host, :primary => true
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Copy database.yml for distribution use
   run 'cp config/database.yml config/database.yml.example'
