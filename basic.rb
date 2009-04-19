@@ -1,6 +1,6 @@
 application_name_human = ask 'Enter a human-readable application name'
 application_name_machine = ask 'Enter a machine-useable application name'
-do_github = yes? 'Host repository on GitHub?'
+use_github = yes? 'Host repository on GitHub?'
 
 staging_user = ask 'Staging server username:'
 staging_domain = ask 'Staging server domain:'
@@ -27,7 +27,7 @@ freeze!
 # Delete unnecessary files
   run 'rm README'
   run 'rm public/index.html'
-  run 'rm public/favicon.ico'staging_user
+  run 'rm public/favicon.ico'
   #run 'rm public/robots.txt'
   run 'rm -f public/javascripts/*'
 
@@ -252,10 +252,10 @@ END
 
 
 # Set up sessions, RSpec, user model, OpenID, etc and run migrations
-  rake 'db:create'
-  rake 'db:sessions:create'
-  #generate :scaffold, 'person', 'first_name:string', 'last_name:string', 'born_at:datetime'
-  rake 'db:migrate'
+  #rake 'db:create'
+  #rake 'db:sessions:create'
+  ##generate :scaffold, 'person', 'first_name:string', 'last_name:string', 'born_at:datetime'
+  #rake 'db:migrate'
 
 
 
@@ -270,7 +270,6 @@ END
 
 
 # Commit all work so far to the repository
-  git :add => '-u'
   git :add => '.'
   git :commit => "-m 'Initial commit'"
 
