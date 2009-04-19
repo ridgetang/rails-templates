@@ -7,10 +7,16 @@ staging_domain = ask 'Staging server domain:'
 staging_sub_domain = ask 'Staging server sub-domain:'
 staging_host = ask 'Staging server host:'
 
+staging_db_user = ask 'Production database login'
+staging_db_pass = ask 'Production database password'
+
 production_user = ask 'Production server username:'
 production_domain = ask 'Production server domain:'
 production_sub_domain = ask 'Production server sub-domain:'
 production_host = ask 'Production server host:'
+
+production_db_user = ask 'Production database login'
+production_db_pass = ask 'Production database password'
 
 
 
@@ -117,15 +123,15 @@ end
 
 
   file 'config/deploy/staging.rb',
-%q{# Who are we?
-set :user, staging_user
+%Q{# Who are we?
+set :user, '#{staging_user}'
 
 # Project hosting details
-set :application, application_name_machine
-set :domain, staging_domain
-set :sub_domain, staging_sub_domain
-set :host, staging_host
-set :deploy_to, "/home/#{user}/public_html/#{domain}/#{sub_domain}"
+set :application, '#{application_name_machine}'
+set :domain, '#{staging_domain}'
+set :sub_domain, '#{staging_sub_domain}'
+set :host, '#{staging_host}'
+set :deploy_to, "/home/\#{user}/public_html/\#{domain}/\#{sub_domain}"
 set :deploy_via, :remote_cache
 
 # For migrations
@@ -133,8 +139,8 @@ set :rails_env, 'staging'
 
 # Deploy details
 set :scm, :git
-#set :repository, "ssh://#{user}@#{host}/home/#{user}/repositories/#{domain}/#{sub_domain}/.git" # CHOOSE
-#set :repository, "git@github.com:#{user}/#{application}.git" # CHOOSE
+#set :repository, "ssh://\#{user}@\#{host}/home/\#{user}/repositories/\#{domain}/\#{sub_domain}/.git" # CHOOSE
+#set :repository, "git@github.com:\#{user}/\#{application}.git" # CHOOSE
 set :branch, 'master'
 set :git_shallow_clone, 1
 set :scm_verbose, true
@@ -142,15 +148,15 @@ set :scm_verbose, true
 
 
   file 'config/deploy/production.rb',
-%q{# Who are we?
-set :user, production_user
+%Q{# Who are we?
+set :user, '#{production_user}'
 
 # Project hosting details
-set :application, application_name_machine
-set :domain, production_domain
-set :sub_domain, production_sub_domain
-set :host, production_host
-set :deploy_to, "/home/#{user}/public_html/#{domain}/#{sub_domain}"
+set :application, '#{application_name_machine}'
+set :domain, '#{production_domain}'
+set :sub_domain, '#{production_sub_domain}'
+set :host, '#{production_host}'
+set :deploy_to, "/home/\#{user}/public_html/\#{domain}/\#{sub_domain}"
 set :deploy_via, :remote_cache
 
 # For migrations
@@ -158,8 +164,8 @@ set :rails_env, 'production'
 
 # Deploy details
 set :scm, :git
-#set :repository, "ssh://#{user}@#{host}/home/#{user}/repositories/#{domain}/#{sub_domain}/.git" # CHOOSE
-#set :repository, "git@github.com:#{user}/#{application}.git" # CHOOSE
+#set :repository, "ssh://\#{user}@\#{host}/home/\#{user}/repositories/\#{domain}/\#{sub_domain}/.git" # CHOOSE
+#set :repository, "git@github.com:\#{user}/\#{application}.git" # CHOOSE
 set :branch, 'master'
 set :git_shallow_clone, 1
 set :scm_verbose, true
@@ -169,41 +175,36 @@ set :scm_verbose, true
 
 # Set up config/database.yml
   file 'config/database.yml',
-%q{<% PASSWORD_FILE = File.join(RAILS_ROOT, '..', '..', 'shared', 'config', 'dbpassword') %>
+%q{
+local_defaults: &local_defaults
+  adapter: sqlite3
+  pool: 5
+  timeout: 5000
 
 development:
-adapter: mysql
-database: <%= application_name_machine %>_development
-username: root
-password:
-host: localhost
-encoding: utf8
+  <<: *local_defaults
+  database: db/development.sqlite3
+
 test:
-adapter: mysql
+  <<: *local_defaults
+  database: db/test.sqlite3
 
-database: <%= application_name_machine %>_test
-username: root
-password:
-host: localhost
-encoding: utf8
+remote_defaults: &remote_defaults
+  adapter: mysql
+  host: localhost
+  username: #{production_db_user}
+  password: #{production_db_pass}
+  encoding: utf8
+  pool: 5
+  reconnect: false
+
 staging:
-adapter: mysql
+  <<: *remote_defaults
+  database: #{application_name_machine}_staging
 
-database: <%= application_name_machine %>_staging
-username: <%= application_name_machineE %>
-password: <%= File.read(PASSWORD_FILE).chomp if File.readable? PASSWORD_FILE %>
-host: localhost
-encoding: utf8
-socket: /var/lib/mysql/mysql.sock
 production:
-adapter: mysql
-
-database: <%= application_name_machine %>_production
-username: <%= PROJECT_NAME %>
-password: <%= File.read(PASSWORD_FILE).chomp if File.readable? PASSWORD_FILE %>
-host: localhost
-encoding: utf8
-socket: /var/lib/mysql/mysql.sock
+  <<: *remote_defaults
+  database: #{application_name_machine}_production
 }
 
 
@@ -242,8 +243,9 @@ END
 
 
 # Add gems
-  gem 'binarylogic-authlogic', :lib => 'authlogic', :source => 'http://gems.github.com'
-  rake 'gems:install'
+  #gem 'binarylogic-authlogic', :lib => 'authlogic', :source => 'http://gems.github.com'
+  #rake 'gems:install'
+
 
 
 # Add plugins
@@ -252,10 +254,10 @@ END
 
 
 # Set up sessions, RSpec, user model, OpenID, etc and run migrations
-  #rake 'db:create'
-  #rake 'db:sessions:create'
-  ##generate :scaffold, 'person', 'first_name:string', 'last_name:string', 'born_at:datetime'
-  #rake 'db:migrate'
+  rake 'db:create'
+  rake 'db:sessions:create'
+  #generate :scaffold, 'person', 'first_name:string', 'last_name:string', 'born_at:datetime'
+  rake 'db:migrate'
 
 
 
