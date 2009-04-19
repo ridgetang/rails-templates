@@ -1,8 +1,17 @@
-freeze!
+lib_name = ask 'What do you want to call the shiny library?'
+do_something = yes? 'Freeze rails gems?'
+
+
+
 capify!
+freeze!
+
+
 
 # Set up git repository
   git :init
+
+
 
 # Delete unnecessary files
   run 'rm README'
@@ -11,22 +20,43 @@ capify!
   #run 'rm public/robots.txt'
   run 'rm -f public/javascripts/*'
 
-# @todo: Download JQuery
-# @todo: Prep staging and production servers
-# @todo: Confirgure capistrano
-  file 'Capfile', %q{load 'deploy' if respond_to?(:namespace) # cap2 differentiator
+
+
+# Copy database.yml for distribution use
+  run 'cp config/database.yml config/database.yml.example'
+
+
+
+# @todo: Download CSS framework (or setup asset server)
+# @todo: Download JQuery (or setup asset server)
+# @todo: Prep staging and production servers (create base directory)
+
+
+
+# Confirgure capistrano
+  file 'Capfile',
+%q{load 'deploy' if respond_to?(:namespace) # cap2 differentiator
 Dir['vendor/plugins/*/recipes/*.rb'].each { |plugin| load(plugin) }
 load 'config/deploy'
 }
-  file 'config/deploy.rb', %q{
-}
 
-file 'config/deploy.rb',
+
+  file 'config/deploy.rb',
 %q{require 'capistrano/ext/multistage'
+
+default_run_options[:pty] = true
+ssh_options[:forward_agent] = true
+
+set :use_sudo, false
+
 set :stages, %w(staging production)
 set :default_stage, 'staging'
 
 before 'deploy:setup', 'db:password'
+
+role :app, host
+role :web, host
+role :db,  host, :primary => true
 
 namespace :deploy do
   desc 'Default deploy - updated to run migrations'
@@ -74,13 +104,9 @@ namespace :db do
 end
 }
 
-file 'config/deploy/staging.rb',
-%q{default_run_options[:pty] = true
-ssh_options[:forward_agent] = true
 
-set :use_sudo, false
-
-# Who are we?
+  file 'config/deploy/staging.rb',
+%q{# Who are we?
 set :user, 'randombydesign' # PROMPT
 
 # Project hosting details
@@ -96,23 +122,16 @@ set :rails_env, 'staging'
 
 # Deploy details
 set :scm, :git
-set :repository, "ssh://#{user}@#{host}/home/#{user}/repositories/#{domain}/#{sub_domain}/.git" # "git@github.com:#{user}/#{application}.git" # PROMPT
+#set :repository, "ssh://#{user}@#{host}/home/#{user}/repositories/#{domain}/#{sub_domain}/.git" # CHOOSE
+#set :repository, "git@github.com:#{user}/#{application}.git" # CHOOSE
 set :branch, 'master'
 set :git_shallow_clone, 1
 set :scm_verbose, true
-
-role :app, host
-role :web, host
-role :db,  host, :primary => true
 }
 
-file 'config/deploy/production.rb',
-%q{default_run_options[:pty] = truecurrent_path
-ssh_options[:forward_agent] = true
 
-set :use_sudo, false
-
-# Who are we?
+  file 'config/deploy/production.rb',
+%q{# Who are we?
 set :user, 'randombydesign' # PROMPT
 
 # Project hosting details
@@ -128,45 +147,14 @@ set :rails_env, 'production'
 
 # Deploy details
 set :scm, :git
-set :repository, "ssh://#{user}@#{host}/home/#{user}/repositories/#{domain}/#{sub_domain}/.git" # "git@github.com:#{user}/#{application}.git" # PROMPT
+#set :repository, "ssh://#{user}@#{host}/home/#{user}/repositories/#{domain}/#{sub_domain}/.git" # CHOOSE
+#set :repository, "git@github.com:#{user}/#{application}.git" # CHOOSE
 set :branch, 'master'
 set :git_shallow_clone, 1
 set :scm_verbose, true
-
-role :app, host
-role :web, host
-role :db,  host, :primary => true
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Copy database.yml for distribution use
-  run 'cp config/database.yml config/database.yml.example'
 
 # Set up .gitignore files
   run 'touch tmp/.gitignore log/.gitignore vendor/.gitignore'
@@ -194,19 +182,39 @@ nbproject/**/*
 tmp/**/*
 END
 
+
+
 # Place an empty .gitignore in empty directories
   run %{find . -type d -empty | grep -v 'vendor' | grep -v '.git' | grep -v 'tmp' | xargs -I xxx touch xxx/.gitignore}
 
-# Set up sessions, RSpec, user model, OpenID, etc, and run migrations
+
+
+# Add gems
+  gem 'authlogic'
+
+
+
+# Add plugins
+  #plugin name, options = {}
+
+
+
+# Set up sessions, RSpec, user model, OpenID, etc and run migrations
   rake 'db:sessions:create'
   rake 'db:migrate'
+
+
 
 # Set up additional resources
   #generate :scaffold, 'person', 'first_name:string', 'last_name:string', 'born_at:datetime'
   #rake 'db:migrate'
 
+
+
 # Configure home page
   #route "map.root :controller => 'people'"
+
+
 
 # Commit all work so far to the repository
   git :add => '-u'
