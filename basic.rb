@@ -1,5 +1,16 @@
-lib_name = ask 'What do you want to call the shiny library?'
-do_something = yes? 'Freeze rails gems?'
+application_name_human = ask 'Enter a human-readable application name'
+application_name_machine = ask 'Enter a machine-useable application name'
+do_github = yes? 'Host repository on GitHub?'
+
+staging_user = ask 'Staging server username:'
+staging_domain = ask 'Staging server domain:'
+staging_sub_domain = ask 'Staging server sub-domain:'
+staging_host = ask 'Staging server host:'
+
+production_user = ask 'Production server username:'
+production_domain = ask 'Production server domain:'
+production_sub_domain = ask 'Production server sub-domain:'
+production_host = ask 'Production server host:'
 
 
 
@@ -16,7 +27,7 @@ freeze!
 # Delete unnecessary files
   run 'rm README'
   run 'rm public/index.html'
-  run 'rm public/favicon.ico'
+  run 'rm public/favicon.ico'staging_user
   #run 'rm public/robots.txt'
   run 'rm -f public/javascripts/*'
 
@@ -107,13 +118,13 @@ end
 
   file 'config/deploy/staging.rb',
 %q{# Who are we?
-set :user, 'randombydesign' # PROMPT
+set :user, staging_user
 
 # Project hosting details
-set :application, 'IsItTheWeekendYet' # PROMPT
-set :domain, 'randombydesign.com' # PROMPT
-set :sub_domain, 'weekend' # PROMPT
-set :host, 'rbd.dreamhost.com' # PROMPT
+set :application, application_name_machine
+set :domain, staging_domain
+set :sub_domain, staging_sub_domain
+set :host, staging_host
 set :deploy_to, "/home/#{user}/public_html/#{domain}/#{sub_domain}"
 set :deploy_via, :remote_cache
 
@@ -132,13 +143,13 @@ set :scm_verbose, true
 
   file 'config/deploy/production.rb',
 %q{# Who are we?
-set :user, 'randombydesign' # PROMPT
+set :user, production_user
 
 # Project hosting details
-set :application, 'IsItTheWeekendYet' # PROMPT
-set :domain, 'isittheweekendyet.com' # PROMPT
-set :sub_domain, 'www' # PROMPT
-set :host, 'rbd.dreamhost.com' # PROMPT
+set :application, application_name_machine
+set :domain, production_domain
+set :sub_domain, production_sub_domain
+set :host, production_host
 set :deploy_to, "/home/#{user}/public_html/#{domain}/#{sub_domain}"
 set :deploy_via, :remote_cache
 
@@ -152,6 +163,47 @@ set :scm, :git
 set :branch, 'master'
 set :git_shallow_clone, 1
 set :scm_verbose, true
+}
+
+
+
+# Set up config/database.yml
+  file 'config/database.yml',
+%q{<% PASSWORD_FILE = File.join(RAILS_ROOT, '..', '..', 'shared', 'config', 'dbpassword') %>
+
+development:
+adapter: mysql
+database: <%= application_name_machine %>_development
+username: root
+password:
+host: localhost
+encoding: utf8
+test:
+adapter: mysql
+
+database: <%= application_name_machine %>_test
+username: root
+password:
+host: localhost
+encoding: utf8
+staging:
+adapter: mysql
+
+database: <%= application_name_machine %>_staging
+username: <%= application_name_machineE %>
+password: <%= File.read(PASSWORD_FILE).chomp if File.readable? PASSWORD_FILE %>
+host: localhost
+encoding: utf8
+socket: /var/lib/mysql/mysql.sock
+production:
+adapter: mysql
+
+database: <%= application_name_machine %>_production
+username: <%= PROJECT_NAME %>
+password: <%= File.read(PASSWORD_FILE).chomp if File.readable? PASSWORD_FILE %>
+host: localhost
+encoding: utf8
+socket: /var/lib/mysql/mysql.sock
 }
 
 
@@ -190,8 +242,8 @@ END
 
 
 # Add gems
-  gem 'authlogic'
-
+  gem 'binarylogic-authlogic', :lib => 'authlogic', :source => 'http://gems.github.com'
+  rake 'gems:install'
 
 
 # Add plugins
@@ -200,19 +252,20 @@ END
 
 
 # Set up sessions, RSpec, user model, OpenID, etc and run migrations
+  rake 'db:create'
   rake 'db:sessions:create'
-  rake 'db:migrate'
-
-
-
-# Set up additional resources
   #generate :scaffold, 'person', 'first_name:string', 'last_name:string', 'born_at:datetime'
-  #rake 'db:migrate'
+  rake 'db:migrate'
 
 
 
 # Configure home page
   #route "map.root :controller => 'people'"
+
+
+
+# Initialize submodules
+  #git :submodule => 'init'
 
 
 
