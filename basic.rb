@@ -57,6 +57,43 @@ freeze!
 
 
 
+# Set up config/database.yml
+  database_yaml = %Q{---
+local_defaults: &local_defaults
+  adapter: sqlite3
+  pool: 5
+  timeout: 5000
+
+development:
+  <<: *local_defaults
+  database: db/development.sqlite3
+
+test:
+  <<: *local_defaults
+  database: db/test.sqlite3
+
+remote_defaults: &remote_defaults
+  adapter: mysql
+  host: localhost
+  username: #{production_db_user}
+  password: #{production_db_pass}
+  encoding: utf8
+  pool: 5
+  reconnect: false
+
+production:
+  <<: *remote_defaults
+  database: #{application_name_machine}_production
+}
+  database_yaml += %Q{
+staging:
+  <<: *remote_defaults
+  database: #{application_name_machine}_staging
+} if setup_staging
+  file 'config/database.yml', database_yaml
+
+
+
 # @todo: Download CSS framework (or setup asset server)
 # @todo: Download JQuery (or setup asset server)
 # @todo: Prep staging and production servers (create base directory)
@@ -188,43 +225,6 @@ set :scm_verbose, true
 
 
 
-# Set up config/database.yml
-  database_yaml = %Q{---
-local_defaults: &local_defaults
-  adapter: sqlite3
-  pool: 5
-  timeout: 5000
-
-development:
-  <<: *local_defaults
-  database: db/development.sqlite3
-
-test:
-  <<: *local_defaults
-  database: db/test.sqlite3
-
-remote_defaults: &remote_defaults
-  adapter: mysql
-  host: localhost
-  username: #{production_db_user}
-  password: #{production_db_pass}
-  encoding: utf8
-  pool: 5
-  reconnect: false
-
-production:
-  <<: *remote_defaults
-  database: #{application_name_machine}_production
-}
-  database_yaml += %Q{
-staging:
-  <<: *remote_defaults
-  database: #{application_name_machine}_staging
-} if setup_staging
-  file 'config/database.yml', database_yaml
-
-
-
 # Set up .gitignore files
   run 'touch tmp/.gitignore log/.gitignore vendor/.gitignore'
   file '.gitignore', <<-END
@@ -266,6 +266,14 @@ END
 
 # Add plugins
   #plugin name, options = {}
+
+
+
+# @future_reference: Set up session store initializer
+#  initializer 'session_store.rb', <<-END
+#ActionController::Base.session = { :session_key => '_#{(1..6).map { |x| (65 + rand(26)).chr }.join}_session', :secret => '#{(1..40).map { |x| (65 + rand(26)).chr }.join}' }
+#ActionController::Base.session_store = :active_record_store
+#END
 
 
 
