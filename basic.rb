@@ -1,14 +1,7 @@
-application_name_human = ask 'Enter a human-readable application name'
-application_name_machine = ask 'Enter a machine-useable application name'
 use_github = yes? 'Host repository on GitHub?'
 
-staging_user = ask 'Staging server username:'
-staging_domain = ask 'Staging server domain:'
-staging_sub_domain = ask 'Staging server sub-domain:'
-staging_host = ask 'Staging server host:'
-
-staging_db_user = ask 'Production database login'
-staging_db_pass = ask 'Production database password'
+application_name_human = ask 'Enter a human-readable application name'
+application_name_machine = ask 'Enter a machine-useable application name'
 
 production_user = ask 'Production server username:'
 production_domain = ask 'Production server domain:'
@@ -17,6 +10,18 @@ production_host = ask 'Production server host:'
 
 production_db_user = ask 'Production database login'
 production_db_pass = ask 'Production database password'
+
+setup_staging = yes? 'Setup staging server?'
+
+if setup_staging
+  staging_user = ask 'Staging server username:'
+  staging_domain = ask 'Staging server domain:'
+  staging_sub_domain = ask 'Staging server sub-domain:'
+  staging_host = ask 'Staging server host:'
+
+  staging_db_user = ask 'Staging database login'
+  staging_db_pass = ask 'Staging database password'
+end
 
 
 
@@ -59,15 +64,15 @@ load 'config/deploy'
 
 
   file 'config/deploy.rb',
-%q{require 'capistrano/ext/multistage'
+%Q{require 'capistrano/ext/multistage'
 
 default_run_options[:pty] = true
 ssh_options[:forward_agent] = true
 
 set :use_sudo, false
 
-set :stages, %w(staging production)
-set :default_stage, 'staging'
+set :stages, %w(#{'staging ' if setup_staging}production)
+set :default_stage, '#{setup_staging ? 'staging' : 'production'}'
 
 before 'deploy:setup', 'db:password'
 
@@ -87,18 +92,18 @@ namespace :deploy do
 
   desc 'Start server'
   task :start do
-    send run_method, "cd #{current_path} && #{mongrel_rails} cluster::start --config #{mongrel_cluster_config}"
+    send run_method, "cd \#{current_path} && \#{mongrel_rails} cluster::start --config \#{mongrel_cluster_config}"
   end
 
   desc 'Stop server'
   task :stop do
-    send run_method, "cd #{current_path} && #{mongrel_rails} cluster::stop --config #{mongrel_cluster_config}"
+    send run_method, "cd \#{current_path} && \#{mongrel_rails} cluster::stop --config \#{mongrel_cluster_config}"
   end
 
   desc 'Restart server'
   task :restart do
-    #send run_method, "cd #{deploy_to}/#{current_dir} && #{mongrel_rails} cluster::restart --config #{mongrel_cluster_config}"
-    run "touch #{current_path}/tmp/restart.txt"
+    #send run_method, "cd \#{deploy_to}/\#{current_dir} && \#{mongrel_rails} cluster::restart --config \#{mongrel_cluster_config}"
+    run "touch \#{current_path}/tmp/restart.txt"
   end
 
   desc 'Run this after every successful deployment'
@@ -108,20 +113,21 @@ namespace :deploy do
 end
 
 task :after_update_code do
-  run "ln -nfs #{shared_path}/config/database.yml #{release_path}/config/database.yml"
+  run "ln -nfs \#{shared_path}/config/database.yml \#{release_path}/config/database.yml"
 end
 
 namespace :db do
   desc 'Create database password in shared path'
   task :password do
     set :db_password, Proc.new { Capistrano::CLI.password_prompt 'Remote database password: ' }
-    run "mkdir -p #{shared_path}/config"
-    put db_password, "#{shared_path}/config/dbpassword"
+    run "mkdir -p \#{shared_path}/config"
+    put db_password, "\#{shared_path}/config/dbpassword"
   end
 end
 }
 
 
+if setup_staging
   file 'config/deploy/staging.rb',
 %Q{# Who are we?
 set :user, '#{staging_user}'
@@ -145,6 +151,7 @@ set :branch, 'master'
 set :git_shallow_clone, 1
 set :scm_verbose, true
 }
+end
 
 
   file 'config/deploy/production.rb',
@@ -174,8 +181,7 @@ set :scm_verbose, true
 
 
 # Set up config/database.yml
-  file 'config/database.yml',
-%q{
+  database_yaml = %Q{---
 local_defaults: &local_defaults
   adapter: sqlite3
   pool: 5
@@ -198,14 +204,16 @@ remote_defaults: &remote_defaults
   pool: 5
   reconnect: false
 
-staging:
-  <<: *remote_defaults
-  database: #{application_name_machine}_staging
-
 production:
   <<: *remote_defaults
   database: #{application_name_machine}_production
 }
+  database_yaml += %Q{
+staging:
+  <<: *remote_defaults
+  database: #{application_name_machine}_staging
+} if setup_staging
+  file 'config/database.yml', database_yaml
 
 
 
