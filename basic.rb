@@ -14,13 +14,21 @@ production_db_pass = ask 'Production database password'
 setup_staging = yes? 'Setup staging server?'
 
 if setup_staging
-  staging_user = ask 'Staging server username:'
-  staging_domain = ask 'Staging server domain:'
-  staging_sub_domain = ask 'Staging server sub-domain:'
-  staging_host = ask 'Staging server host:'
+  staging_user = ask 'Staging server username (leave empty to use production value):'
+  staging_domain = ask 'Staging server domain (leave empty to use production value):'
+  staging_sub_domain = ask 'Staging server sub-domain (leave empty to use production value):'
+  staging_host = ask 'Staging server host (leave empty to use production value):'
 
-  staging_db_user = ask 'Staging database login'
-  staging_db_pass = ask 'Staging database password'
+  staging_db_user = ask 'Staging database login (leave empty to use production value):'
+  staging_db_pass = ask 'Staging database password (leave empty to use production value):'
+
+  staging_user = production_user if staging_user.empty?
+  staging_domain = production_domain if staging_domain.empty?
+  staging_sub_domain = production_sub_domain if staging_sub_domain.empty?
+  staging_host = production_host if staging_host.empty?
+
+  staging_db_user = production_db_user if staging_db_user.empty?
+  staging_db_pass = production_db_pass if staging_db_pass.empty?
 end
 
 
