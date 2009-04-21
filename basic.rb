@@ -1,34 +1,48 @@
-use_github = yes? 'Host repository on GitHub?'
+use_github = yes? 'Host repository on GitHub? [y|n]'
 
-application_name_human = ask 'Enter a human-readable application name'
-application_name_machine = ask 'Enter a machine-useable application name'
+application_name_human   = ask 'Enter a human-readable application name: []'
+application_name_machine = ask 'Enter a machine-useable application name: []'
 
-production_user = ask 'Production server username:'
-production_domain = ask 'Production server domain:'
-production_sub_domain = ask 'Production server sub-domain:'
-production_host = ask 'Production server host:'
+default_user       = ''
+default_domain     = application_name_machine + '.com' unless application_name_machine.empty?
+default_sub_domain = 'www'
+default_db_user    = ''
+default_db_pass    = ''
 
-production_db_user = ask 'Production database login'
-production_db_pass = ask 'Production database password'
+production_user       = ask "Production server username: [#{default_user}]"
+production_domain     = ask "Production server domain: [#{default_domain}]"
+production_sub_domain = ask "Production server sub-domain: [#{default_sub_domain}]"
 
-setup_staging = yes? 'Setup staging server?'
+default_host = production_domain unless production_domain.empty?
+default_host = "#{production_sub_domain}.#{default_host}" unless production_sub_domain.empty?
+
+production_host       = ask "Production server host: [#{default_host}]"
+production_db_user    = ask "Production database login: [#{default_db_user}]"
+production_db_pass    = ask "Production database password: [#{default_db_pass}]"
+
+production_user       = default_user       if production_user.empty?
+production_domain     = default_domain     if production_domain.empty?
+production_sub_domain = default_sub_domain if production_sub_domain.empty?
+production_host       = default_host       if production_host.empty?
+production_db_user    = default_db_user    if production_db_user.empty?
+production_db_pass    = default_db_pass    if production_db_pass.empty?
+
+setup_staging = yes? 'Setup staging server? [y|n]'
 
 if setup_staging
-  staging_user = ask 'Staging server username (leave empty to use production value):'
-  staging_domain = ask 'Staging server domain (leave empty to use production value):'
-  staging_sub_domain = ask 'Staging server sub-domain (leave empty to use production value):'
-  staging_host = ask 'Staging server host (leave empty to use production value):'
+  staging_user       = ask "Staging server username: [#{production_user}]"
+  staging_domain     = ask "Staging server domain: [#{production_domain}]"
+  staging_sub_domain = ask "Staging server sub-domain: [#{production_sub-domain}]"
+  staging_host       = ask "Staging server host: [#{production_host}]"
+  staging_db_user    = ask "Staging database login: [#{production_db_user}]"
+  staging_db_pass    = ask "Staging database password: [#{production_db_pass}]"
 
-  staging_db_user = ask 'Staging database login (leave empty to use production value):'
-  staging_db_pass = ask 'Staging database password (leave empty to use production value):'
-
-  staging_user = production_user if staging_user.empty?
-  staging_domain = production_domain if staging_domain.empty?
+  staging_user       = production_user       if staging_user.empty?
+  staging_domain     = production_domain     if staging_domain.empty?
   staging_sub_domain = production_sub_domain if staging_sub_domain.empty?
-  staging_host = production_host if staging_host.empty?
-
-  staging_db_user = production_db_user if staging_db_user.empty?
-  staging_db_pass = production_db_pass if staging_db_pass.empty?
+  staging_host       = production_host       if staging_host.empty?
+  staging_db_user    = production_db_user    if staging_db_user.empty?
+  staging_db_pass    = production_db_pass    if staging_db_pass.empty?
 end
 
 
