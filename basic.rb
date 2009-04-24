@@ -102,8 +102,10 @@ messages = []
 
 
 # Set up git repository and create the initial commit
-  run 'touch tmp/.gitignore log/.gitignore vendor/.gitignore'
-  file '.gitignore', <<-END
+#
+git :init
+
+file '.gitignore', <<-END
 *~
 *.cache
 Capfile
@@ -126,42 +128,56 @@ log/*.pid
 nbproject/**/*
 tmp/**/*
 END
-  git :init
-  commit 'Initial commit'
+
+commit 'Initial commit'
+
+
+
+# Place an empty .gitignore in any empty directories
+#
+run 'touch tmp/.gitignore log/.gitignore vendor/.gitignore'
+#run %{find . -type d -empty | grep -v 'vendor' | grep -v '.git' | grep -v 'tmp' | xargs -I xxx touch xxx/.gitignore}
+run "find . \\( -type d -empty \\) -and \\( -not -regex ./\\.git.* \\) -exec touch {}/.gitignore \\;"
+commit 'Added .gitignores to track empty directories (necessary evil until .gitnotice becomes a reality)'
 
 
 
 # Add remote origin
-  origin_name = use_github ? 'github' : 'dreamhost'
-  git :remote => "add #{origin_name} #{origin_repository}"
+#
+origin_name = use_github ? 'github' : 'dreamhost'
+git :remote => "add #{origin_name} #{origin_repository}"
 
 
 
 # Freeze Rails and initialize Capistrano
-  freeze!
-  capify!
-  commit 'Rails froze over'
+#
+freeze!
+capify!
+commit 'Rails froze over'
 
 
 
 # Delete unnecessary files
-  run 'rm README'
-  run 'rm public/index.html'
-  run 'rm public/favicon.ico'
-  #run 'rm public/robots.txt'
-  run 'rm -f public/javascripts/*'
-  commit 'Removed non-essential files'
+#
+run 'rm README'
+run 'rm public/index.html'
+run 'rm public/favicon.ico'
+#run 'rm public/robots.txt'
+run 'rm -f public/javascripts/*'
+commit 'Removed non-essential files'
 
 
 
-# Copy database.yml for distribution use
-  run 'cp config/database.yml config/database.yml.example'
-  commit 'Copied default config/database.yml to config/database.yml.example'
+# Copy stock database.yml for distribution use
+#
+run 'cp config/database.yml config/database.yml.example'
+commit 'Copied default config/database.yml to config/database.yml.example'
 
 
 
 # Set up config/database.yml
-  database_yaml = %Q{---
+#
+database_yaml = %Q{---
 local_defaults: &local_defaults
   adapter: sqlite3
   pool: 5
@@ -194,7 +210,7 @@ staging:
   database: #{application_name}_staging
 } if setup_staging
 
-  file 'config/database.yml', database_yaml
+file 'config/database.yml', database_yaml
 
 
 
@@ -205,14 +221,15 @@ staging:
 
 
 # Confirgure capistrano
-  file 'Capfile',
+#
+file 'Capfile',
 %q{load 'deploy' if respond_to?(:namespace) # cap2 differentiator
 Dir['vendor/plugins/*/recipes/*.rb'].each { |plugin| load(plugin) }
 load 'config/deploy'
 }
 
 
-  file 'config/deploy.rb',
+file 'config/deploy.rb',
 %Q{require 'capistrano/ext/multistage'
 
 default_run_options[:pty] = true
@@ -278,7 +295,7 @@ end
 
 if setup_staging
   file 'config/deploy/staging.rb',
-%Q{# Who are we?
+  %Q{# Who are we?
 set :user, '#{staging_user}'
 
 # Project hosting details
@@ -302,7 +319,7 @@ set :scm_verbose, true
 end
 
 
-  file 'config/deploy/production.rb',
+file 'config/deploy/production.rb',
 %Q{# Who are we?
 set :user, '#{production_user}'
 
@@ -330,24 +347,28 @@ commit 'Configured Capistrano'
 
 
 # Add gems
-  #gem 'binarylogic-authlogic', :lib => 'authlogic', :source => 'http://gems.github.com'
-  #rake 'gems:install'
+#
+#gem 'binarylogic-authlogic', :lib => 'authlogic', :source => 'http://gems.github.com'
+#rake 'gems:install'
 
 
 
 # Add plugins
-  plugin 'brynary-rack_bug', :git => 'git://github.com/brynary/rack-bug.git', :submodule => true
+#
+plugin 'brynary-rack_bug', :git => 'git://github.com/brynary/rack-bug.git', :submodule => true
 
 
 
 # Initialize submodules
-  #git :submodule => 'init'
-  #commit ''
+#
+#git :submodule => 'init'
+#commit ''
 
 
 
 # @future_reference: Set up session store initializer
-#  initializer 'session_store.rb', <<-END
+#
+#initializer 'session_store.rb', <<-END
 #ActionController::Base.session = { :session_key => '_#{(1..6).map { |x| (65 + rand(26)).chr }.join}_session', :secret => '#{(1..40).map { |x| (65 + rand(26)).chr }.join}' }
 #ActionController::Base.session_store = :active_record_store
 #END
@@ -355,30 +376,27 @@ commit 'Configured Capistrano'
 
 
 # Set up sessions, RSpec, user model, OpenID, etc and run migrations
-  rake 'db:create'
-  rake 'db:sessions:create'
-  #generate :scaffold, 'person', 'first_name:string', 'last_name:string', 'born_at:datetime'
-  rake 'db:migrate'
-  commit 'Ran boilerplate rake tasks'
+#
+rake 'db:create'
+rake 'db:sessions:create'
+#generate :scaffold, 'person', 'first_name:string', 'last_name:string', 'born_at:datetime'
+rake 'db:migrate'
+commit 'Ran boilerplate rake tasks'
 
 
 
 # Configure home page
-  #route "map.root :controller => 'people'"
-  #commit 'Setup default page (/)'
-
-
-
-# Place an empty .gitignore in any remaining empty directories
-  run %{find . -type d -empty | grep -v 'vendor' | grep -v '.git' | grep -v 'tmp' | xargs -I xxx touch xxx/.gitignore}
-  commit 'Added .gitignores to track empty directories (necessary evil until .gitnotice becomes a reality)'
+#
+#route "map.root :controller => 'people'"
+#commit 'Setup default page (/)'
 
 
 
 # Dump messages to screen
-  if messages.any?
-    puts
-    messages.each { |line| puts line }
-    puts
-  end
+#
+if messages.any?
+puts
+messages.each { |line| puts line }
+puts
+end
 
