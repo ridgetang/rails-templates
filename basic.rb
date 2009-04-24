@@ -1,59 +1,146 @@
-use_github = yes? 'Host repository on GitHub? [y|n]'
+def commit(message)
+  puts
 
-application_name_human   = ask 'Enter a human-readable application name: []'
-application_name_machine = ask 'Enter a machine-useable application name: []'
+  git :add => '.' # add new files
+  git :add => '-u' # remove deleted files
+  git :commit => "-m '#{message}'"
 
-default_user       = ''
-default_domain     = application_name_machine + '.com' unless application_name_machine.empty?
-default_sub_domain = 'www'
-default_db_user    = ''
-default_db_pass    = ''
+  puts
+  puts
+end
 
-production_user       = ask "Production server username: [#{default_user}]"
-production_domain     = ask "Production server domain: [#{default_domain}]"
-production_sub_domain = ask "Production server sub-domain: [#{default_sub_domain}]"
-
-default_host = production_domain unless production_domain.empty?
-default_host = "#{production_sub_domain}.#{default_host}" unless production_sub_domain.empty?
-
-production_host       = ask "Production server host: [#{default_host}]"
-production_db_user    = ask "Production database login: [#{default_db_user}]"
-production_db_pass    = ask "Production database password: [#{default_db_pass}]"
-
-production_user       = default_user       if production_user.empty?
-production_domain     = default_domain     if production_domain.empty?
-production_sub_domain = default_sub_domain if production_sub_domain.empty?
-production_host       = default_host       if production_host.empty?
-production_db_user    = default_db_user    if production_db_user.empty?
-production_db_pass    = default_db_pass    if production_db_pass.empty?
-
-setup_staging = yes? 'Setup staging server? [y|n]'
-
-if setup_staging
-  staging_user       = ask "Staging server username: [#{production_user}]"
-  staging_domain     = ask "Staging server domain: [#{production_domain}]"
-  staging_sub_domain = ask "Staging server sub-domain: [#{production_sub-domain}]"
-  staging_host       = ask "Staging server host: [#{production_host}]"
-  staging_db_user    = ask "Staging database login: [#{production_db_user}]"
-  staging_db_pass    = ask "Staging database password: [#{production_db_pass}]"
-
-  staging_user       = production_user       if staging_user.empty?
-  staging_domain     = production_domain     if staging_domain.empty?
-  staging_sub_domain = production_sub_domain if staging_sub_domain.empty?
-  staging_host       = production_host       if staging_host.empty?
-  staging_db_user    = production_db_user    if staging_db_user.empty?
-  staging_db_pass    = production_db_pass    if staging_db_pass.empty?
+def prompt(question, default)
+  response = ask "#{question}: [#{default}]"
+  response.blank? ? default : response
 end
 
 
 
-capify!
-freeze!
+puts
+
+confirmation = []
+
+application_name = prompt 'Enter a machine-useable application name', ''
+confirmation << "Application name is #{application_name}"
+
+default_user       = ''
+default_domain     = application_name + '.com' unless application_name.blank?
+default_sub_domain = 'www'
+default_db_user    = ''
+default_db_pass    = ''
+
+production_user       = prompt 'Production server username', default_user
+production_domain     = prompt 'Production server domain', default_domain
+production_sub_domain = prompt 'Production server sub-domain', default_sub_domain
+
+default_host = production_domain unless production_domain.blank?
+default_host = "#{production_sub_domain}.#{default_host}" unless production_sub_domain.blank?
+
+production_host       = prompt 'Production server host', default_host
+production_db_user    = prompt 'Production database login', default_db_user
+production_db_pass    = prompt 'Production database password', default_db_pass
+
+confirmation << ''
+confirmation << "production_user       = #{production_user}"
+confirmation << "production_domain     = #{production_domain}"
+confirmation << "production_sub_domain = #{production_sub_domain}"
+confirmation << "production_host       = #{production_host}"
+confirmation << "production_db_user    = #{production_db_user}"
+confirmation << "production_db_pass    = #{production_db_pass}"
+
+setup_staging = yes? 'Setup staging server? [y|n]'
+confirmation << ''
+confirmation << "You do #{'not ' unless setup_staging}want to setup a staging server"
+
+if setup_staging
+  staging_user       = prompt 'Staging server username', production_user
+  staging_domain     = prompt 'Staging server domain', production_domain
+  staging_sub_domain = prompt 'Staging server sub-domain', production_sub_domain
+  staging_host       = prompt 'Staging server host', production_host
+  staging_db_user    = prompt 'Staging database login', production_db_user
+  staging_db_pass    = prompt 'Staging database password', production_db_pass
+
+  confirmation << ''
+  confirmation << "staging_user       = #{staging_user}"
+  confirmation << "staging_domain     = #{staging_domain}"
+  confirmation << "staging_sub_domain = #{staging_sub_domain}"
+  confirmation << "staging_host       = #{staging_host}"
+  confirmation << "staging_db_user    = #{staging_db_user}"
+  confirmation << "staging_db_pass    = #{staging_db_pass}"
+end
+
+use_github = yes? 'Host repository on GitHub? [y|n]'
+confirmation << ''
+confirmation << "This project will #{'not ' unless use_github}be hosted on GitHub"
+
+repository_user = prompt 'GitHub username', production_user if use_github
+repository_user ||= production_user
+confirmation << ''
+confirmation << "repository_user = #{repository_user}"
+
+capistrano_repository = use_github ? 'git://git@github.com:#{user}/#{application}.git' : 'ssh://#{user}@#{host}/home/#{user}/repositories/#{domain}/#{sub_domain}/.git'
+origin_repository = use_github ? "git://github.com/#{repository_user}/#{application_name}.git" : "ssh://#{production_user}@#{production_host}/home/#{production_user}/repositories/#{production_domain}/#{production_sub_domain}/.git"
+
+confirmation << ''
+confirmation << "capistrano_repository = #{capistrano_repository}"
+confirmation << "origin_repository = #{origin_repository}"
+
+puts
+confirmation.each { |line| puts line }
+puts
+
+if no? 'Before continuing, please verify that these choices are correct. Do wish to proceed? [y|n]'
+  exit
+end
+
+# end of configuration
 
 
 
-# Set up git repository
+messages = []
+
+
+
+# Set up git repository and create the initial commit
+  run 'touch tmp/.gitignore log/.gitignore vendor/.gitignore'
+  file '.gitignore', <<-END
+*~
+*.cache
+Capfile
+.DS_Store
+*.log
+*.pid
+*.sw?
+*.tmproj
+config/database.yml
+config/deploy.rb
+coverage/*
+db/cstore/**
+db/*.sqlite3
+doc/api
+doc/app
+doc/*.dot
+doc/plugins
+log/*.log
+log/*.pid
+nbproject/**/*
+tmp/**/*
+END
   git :init
+  commit 'Initial commit'
+
+
+
+# Add remote origin
+  origin_name = use_github ? 'github' : 'dreamhost'
+  git :remote => "add #{origin_name} #{origin_repository}"
+
+
+
+# Freeze Rails and initialize Capistrano
+  freeze!
+  capify!
+  commit 'Rails froze over'
 
 
 
@@ -63,11 +150,13 @@ freeze!
   run 'rm public/favicon.ico'
   #run 'rm public/robots.txt'
   run 'rm -f public/javascripts/*'
+  commit 'Removed non-essential files'
 
 
 
 # Copy database.yml for distribution use
   run 'cp config/database.yml config/database.yml.example'
+  commit 'Copied default config/database.yml to config/database.yml.example'
 
 
 
@@ -97,13 +186,14 @@ remote_defaults: &remote_defaults
 
 production:
   <<: *remote_defaults
-  database: #{application_name_machine}_production
+  database: #{application_name}_production
 }
   database_yaml += %Q{
 staging:
   <<: *remote_defaults
-  database: #{application_name_machine}_staging
+  database: #{application_name}_staging
 } if setup_staging
+
   file 'config/database.yml', database_yaml
 
 
@@ -192,7 +282,7 @@ if setup_staging
 set :user, '#{staging_user}'
 
 # Project hosting details
-set :application, '#{application_name_machine}'
+set :application, '#{application_name}'
 set :domain, '#{staging_domain}'
 set :sub_domain, '#{staging_sub_domain}'
 set :host, '#{staging_host}'
@@ -204,8 +294,7 @@ set :rails_env, 'staging'
 
 # Deploy details
 set :scm, :git
-#set :repository, "ssh://\#{user}@\#{host}/home/\#{user}/repositories/\#{domain}/\#{sub_domain}/.git" # CHOOSE
-#set :repository, "git@github.com:\#{user}/\#{application}.git" # CHOOSE
+set :repository, capistrano_repository
 set :branch, 'master'
 set :git_shallow_clone, 1
 set :scm_verbose, true
@@ -218,7 +307,7 @@ end
 set :user, '#{production_user}'
 
 # Project hosting details
-set :application, '#{application_name_machine}'
+set :application, '#{application_name}'
 set :domain, '#{production_domain}'
 set :sub_domain, '#{production_sub_domain}'
 set :host, '#{production_host}'
@@ -230,45 +319,13 @@ set :rails_env, 'production'
 
 # Deploy details
 set :scm, :git
-#set :repository, "ssh://\#{user}@\#{host}/home/\#{user}/repositories/\#{domain}/\#{sub_domain}/.git" # CHOOSE
-#set :repository, "git@github.com:\#{user}/\#{application}.git" # CHOOSE
+set :repository, capistrano_repository
 set :branch, 'master'
 set :git_shallow_clone, 1
 set :scm_verbose, true
 }
 
-
-
-# Set up .gitignore files
-  run 'touch tmp/.gitignore log/.gitignore vendor/.gitignore'
-  file '.gitignore', <<-END
-*~
-*.cache
-Capfile
-.DS_Store
-*.log
-*.pid
-*.sw?
-*.tmproj
-config/database.yml
-config/deploy.rb
-coverage/*
-db/cstore/**
-db/*.sqlite3
-doc/api
-doc/app
-doc/*.dot
-doc/plugins
-log/*.log
-log/*.pid
-nbproject/**/*
-tmp/**/*
-END
-
-
-
-# Place an empty .gitignore in empty directories
-  run %{find . -type d -empty | grep -v 'vendor' | grep -v '.git' | grep -v 'tmp' | xargs -I xxx touch xxx/.gitignore}
+commit 'Configured Capistrano'
 
 
 
@@ -279,7 +336,13 @@ END
 
 
 # Add plugins
-  #plugin name, options = {}
+  plugin 'brynary-rack_bug', :git => 'git://github.com/brynary/rack-bug.git', :submodule => true
+
+
+
+# Initialize submodules
+  #git :submodule => 'init'
+  #commit ''
 
 
 
@@ -296,20 +359,26 @@ END
   rake 'db:sessions:create'
   #generate :scaffold, 'person', 'first_name:string', 'last_name:string', 'born_at:datetime'
   rake 'db:migrate'
+  commit 'Ran boilerplate rake tasks'
 
 
 
 # Configure home page
   #route "map.root :controller => 'people'"
+  #commit 'Setup default page (/)'
 
 
 
-# Initialize submodules
-  #git :submodule => 'init'
+# Place an empty .gitignore in any remaining empty directories
+  run %{find . -type d -empty | grep -v 'vendor' | grep -v '.git' | grep -v 'tmp' | xargs -I xxx touch xxx/.gitignore}
+  commit 'Added .gitignores to track empty directories (necessary evil until .gitnotice becomes a reality)'
 
 
 
-# Commit all work so far to the repository
-  git :add => '.'
-  git :commit => "-m 'Initial commit'"
+# Dump messages to screen
+  if messages.any?
+    puts
+    messages.each { |line| puts line }
+    puts
+  end
 
