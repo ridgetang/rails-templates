@@ -517,7 +517,7 @@ inside ('test') do
 end
 
 file 'test/shoulda_macros/forms.rb', 
-%q{class Test::Unit::TestCase
+%q{class ActiveSupport::TestCase
   def self.should_have_form(opts)
     model = self.name.gsub(/ControllerTest$/, '').singularize.downcase
     model = model[model.rindex('::')+2..model.size] if model.include?('::')
