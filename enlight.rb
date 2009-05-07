@@ -25,6 +25,7 @@ gem 'rsl-stringex'
 gem 'alexdunae-validates_email_format_of'
 gem 'ruby-debug'
 gem 'god'
+gem 'newrelic_rpm'
 
 # rake("gems:install", :sudo => true)
 # rake("gems:unpack")
@@ -219,7 +220,10 @@ Rails::Initializer.run do |config|
   config.gem 'rsl-stringex',
              :lib => 'stringex',
              :source => 'http://gems.github.com',
-             :version => '0.9.3'
+             :version => '>= 0.9.3'
+  config.gem 'newrelic_rpm',
+             :version => '>= 2.8.10',
+             :lib => 'newrelic_rpm'
   
   # Only load the plugins named here, in the order given. By default, all plugins 
   # in vendor/plugins are loaded in alphabetical order.
