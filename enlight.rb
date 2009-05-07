@@ -74,10 +74,10 @@ file 'app/views/layouts/application.html.erb',
     <%= yield %>
 
     <script src="http://www.google.com/jsapi" type="text/javascript"></script>
-    <script type="text/javascript">
+    <script type="text/javascript">//<!--
       google.load("jquery", "1.3.2");
       google.load("jqueryui", "1.7.1");
-    </script>
+    //--></script>
   </body>
 </html>
 }
@@ -305,6 +305,26 @@ production:
   host: localhost
   encoding: utf8
   socket: /var/lib/mysql/mysql.sock
+}
+
+file 'config/initializers/debugging.rb',
+%q{if %w(development test).include?(RAILS_ENV)
+  begin
+    SCRIPT_LINES__
+  rescue NameError
+    SCRIPT_LINES__ = {}
+  end
+  begin
+    require 'ruby-debug'
+  rescue LoadError
+    warn "Debugging will be unavailable: #{$!}"
+  end
+end
+}
+
+file 'config/initializers/validation_div_fix',
+%q{ActionView::Base.field_error_proc = Proc.new { |html_tag, instance|
+"<span class=\"fieldWithErrors\">#{html_tag}</span>" }
 }
 
 file 'config/deploy.rb', 
