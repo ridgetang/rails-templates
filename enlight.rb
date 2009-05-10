@@ -79,6 +79,7 @@ file 'app/views/layouts/application.html.erb',
       google.load("jquery", "1.3.2");
       google.load("jqueryui", "1.7.1");
     //--></script>
+    <%= javascript_include_tag 'xhr_fix' %>
   </body>
 </html>
 }
@@ -620,6 +621,13 @@ class ActionView::TestCase
   # Default host for helper tests
   default_url_options[:host] = HOST
 end
+}
+
+file 'public/xhr_fix.js',
+%q{jQuery.ajaxSetup({ 
+  'beforeSend': function(xhr) {xhr.setRequestHeader("Accept",
+    "text/javascript")} 
+});
 }
 
 # ====================
