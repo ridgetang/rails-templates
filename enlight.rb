@@ -548,7 +548,7 @@ end
 }
 
 file 'test/shoulda_macros/pagination.rb', 
-%q{class Test::Unit::TestCase
+%q{class ActiveSupport::TestCase
   # Example:
   #  context "a GET to index logged in as admin" do
   #    setup do
@@ -604,7 +604,7 @@ require File.expand_path(File.dirname(__FILE__) + "/../config/environment")
 require 'test_help'
 require 'action_view/test_case'
 
-class Test::Unit::TestCase
+class ActiveSupport::TestCase
 
   self.use_transactional_fixtures = true
   self.use_instantiated_fixtures  = false
