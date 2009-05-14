@@ -91,7 +91,7 @@ file 'app/views/static/index.html.erb', <<-TEMPLATE
 
 <p>This template doesn't assume anything about how you want to build your application other than that you want to use Twitter authentication to do it, so you can generate any controllers, models, and anything else you like! You can tie it back to Twitter accounts simply by adding associations etc. to <code>app/models/user.rb</code>.</p>
 
-<% if @users.any? %>
+<% if @users and @users.any? %>
   <h2>Recently Joined</h2>
   <% for user in @users %>
     <%= link_to profile_image(user), twitter_profile_url(user), :target => "_blank" %>
